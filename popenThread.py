@@ -13,13 +13,15 @@ class PopenThread(QThread):
         self.examples = examples
         self.workDir = workDir
         self.source = source
+        self.cur = None
 
     def run(self):
         for example in self.examples:
             print(example)
             example_file = self.workDir + '\\inputs\\'+example
             cmd = f'"{self.source}.exe" < "{example_file}"'
-            output = os.popen(cmd)
+            self.cur = os.popen(cmd)
+            output=self.cur
             try:
                 output_str = output.read()
             except Exception as e:
@@ -27,3 +29,10 @@ class PopenThread(QThread):
 
             self.CheckFinished.emit(example,output_str)
         self.AllFinished.emit()
+
+    def terminate(self):
+        try:
+            self.cur.close()
+        except:
+            pass
+        super().terminate()

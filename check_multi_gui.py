@@ -1,7 +1,6 @@
 """
 UTF-8编码的文本文档来记录程序运行数据。每次确认都记录数据。数据格式类似csv：
 文件夹全名,题号,得分,批注。
-todo 最后一个文件夹后按提交没有自动进入下一个文件夹
 """
 
 from PyQt5 import QtWidgets,QtGui,QtCore
@@ -15,7 +14,10 @@ from datetime import datetime
 class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
-        self.setWindowTitle("C语言作业批改系统  V0.1")
+        self.name = '南京大学C语言作业批改系统'
+        self.version = 'V1.0'
+        self.date = '20190304'
+        self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
         self.popenThread = None
@@ -24,11 +26,11 @@ class checkWindow(QtWidgets.QMainWindow):
 
     def initUI(self):
         self.initCentral()
-        self.initToolBar()
         self.initFileDock()
         self.initDirDock()
         self.initExamplesDock()
         self.initCurrentExampleDock()
+        self.initToolBar()
 
     def initCentral(self):
         widget = QtWidgets.QWidget(self)
@@ -55,6 +57,7 @@ class checkWindow(QtWidgets.QMainWindow):
         btnUnknown.clicked.connect(lambda:self.mark_btn_clicked(-1))
 
         line = QtWidgets.QLineEdit()
+        line.setText('3')
         self.markLine = line
         line.setMaximumWidth(80)
 
@@ -131,6 +134,28 @@ class checkWindow(QtWidgets.QMainWindow):
         toolBar.addWidget(btnNextDir)
 
         self.addToolBar(toolBar)
+
+        toolBar = QtWidgets.QToolBar(self)
+        btnFile = QtWidgets.QPushButton('工作区文件夹')
+        btnDir = QtWidgets.QPushButton('当前作业文件夹')
+        btnExampleList = QtWidgets.QPushButton('测试用例表')
+        btnExampleContent = QtWidgets.QPushButton('当前测试用例')
+
+        toolBar.addWidget(btnFile)
+        toolBar.addWidget(btnDir)
+        toolBar.addWidget(btnExampleList)
+        toolBar.addWidget(btnExampleContent)
+
+        btnFile.clicked.connect(lambda:self.fileDock.setVisible(not self.fileDock.isVisible()))
+        btnDir.clicked.connect(lambda :self.dirDock.setVisible(not self.dirDock.isVisible()))
+        btnExampleList.clicked.connect(lambda:self.examplesDock.setVisible(not self.examplesDock.isVisible()))
+        btnExampleContent.clicked.connect(lambda:self.currentExampleDock.setVisible(not self.currentExampleDock.isVisible()))
+
+        btnAbout = QtWidgets.QPushButton('关于')
+        btnAbout.clicked.connect(self.about)
+        toolBar.addWidget(btnAbout)
+
+        self.addToolBar(Qt.TopToolBarArea,toolBar)
     
     def initFileDock(self):
         """
@@ -153,6 +178,7 @@ class checkWindow(QtWidgets.QMainWindow):
         """
         dock = QtWidgets.QDockWidget()
         dock.setWindowTitle("当前作业文件夹")
+        self.dirDock = dock
 
         listWidget = QtWidgets.QListWidget()
         dock.setWidget(listWidget)
@@ -164,6 +190,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def initExamplesDock(self):
         dock = QtWidgets.QDockWidget()
         dock.setWindowTitle('测试用例表')
+        self.examplesDock = dock
 
         listWidget = QtWidgets.QListWidget()
         listWidget.currentItemChanged.connect(self.example_changed)
@@ -174,6 +201,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def initCurrentExampleDock(self):
         dock = QtWidgets.QDockWidget()
         dock.setWindowTitle("本题目测试用例")
+        self.currentExampleDock = dock
 
         textEdit = QtWidgets.QTextEdit()
         dock.setWidget(textEdit)
@@ -259,7 +287,8 @@ class checkWindow(QtWidgets.QMainWindow):
             fp.write(note+'\n')
             self.statusBar().showMessage(f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}")
         idx = self.dirListWidget.currentRow()
-        if idx < self.dirListWidget.count():
+        if 0<= idx < self.dirListWidget.count():
+            self.exampleList.setCurrentRow(self.exampleList.currentRow()+1)
             self.dirListWidget.setCurrentRow(self.dirListWidget.currentRow()+1)
         else:
             self.statusBar().showMessage(f'{datetime.now().strftime("%H:%M:%S")}'
@@ -272,8 +301,11 @@ class checkWindow(QtWidgets.QMainWindow):
         """
         扫描当前工作区，初始化listWidget
         """
+        if not self.dirEdit.text():
+            return
         self.workDir = self.dirEdit.text()
         self.fileListWidget.clear()
+        self.workDir.strip()
         self.workDir.rstrip('\\')
         self.workDir.rstrip('/')
         try:
@@ -297,7 +329,8 @@ class checkWindow(QtWidgets.QMainWindow):
         self.outEdit.setText(note)
         compile_cmd = f'gcc "{source}" -o "{source}.exe" --std=c99'
         out = os.popen(compile_cmd)
-        self.outEdit.setText('*************编译输出*************\n'+out.read()+'\n\n')
+        self.outEdit.setText('*************编译开始*************\n'+out.read()+
+                             '\n\n*************编译结束*************\n')
 
         popenThread = PopenThread(source,self.workDir,examples)
         self.popenThread = popenThread
@@ -327,6 +360,10 @@ class checkWindow(QtWidgets.QMainWindow):
         由fileListWidget切换触发。
         """
         if item is not None:
+            try:
+                self.exampleList.setCurrentRow(0)
+            except:
+                pass
             self.loadDir(item.text())
 
     def dir_line_changed(self,item:QtWidgets.QListWidgetItem):
@@ -337,13 +374,9 @@ class checkWindow(QtWidgets.QMainWindow):
             return
         idx = self.dirListWidget.currentRow()
         try:
-            examples = self.examples[idx]
-        except IndexError:
-            QtWidgets.QMessageBox.information(self,'提示',
-                                              '没有顺序匹配的测试用例，请手动选择测试用例并进行测试')
-        else:
-            self.exampleList.setCurrentRow(idx)
-            self.checkAProblem(item.text(),examples)
+            self.checkAProblem(item.text(),self.exampleList.currentItem().data(-1))
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self,'错误','自动测试失败，请手动点击测试\n'+repr(e))
         try:
             with open(item.text(),'r',encoding='GBK',errors='ignore') as fp:
                 self.codeEdit.setText(fp.read())
@@ -353,6 +386,8 @@ class checkWindow(QtWidgets.QMainWindow):
         self.numberEdit.setText(str(idx+1))
 
     def example_changed(self,item:QtWidgets.QListWidgetItem):
+        if item is None:
+            return
         example_contents = []
         example_files = item.data(-1)
         for f in example_files:
@@ -364,6 +399,13 @@ class checkWindow(QtWidgets.QMainWindow):
         if self.popenThread is not None:
             self.popenThread.terminate()
             self.outEdit.setText(self.outEdit.toPlainText()+'\n\n##########\n测试中止\n##########')
+
+    def about(self):
+        text = self.name+'  '+self.version+'\n'
+        text += self.date + '\n'
+        text += '南京大学现代工程与应用科学学院  马兴越\n'
+        text += 'https://github.com/CDK6182CHR/NJU_C_checker_multi'
+        QtWidgets.QMessageBox.about(self,'关于',text)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
