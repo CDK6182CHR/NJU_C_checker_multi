@@ -1,7 +1,7 @@
 """
 对源代码等的预处理，方便修改
 """
-import chardet
+import chardet,re
 
 def pre_code(src:str)->str:
     """
@@ -20,9 +20,18 @@ def pre_code(src:str)->str:
         fp.close()
         with open(src, 'w') as fp:
             fp.write(content_str)
+
     with open(src,'r',encoding='GBK',errors='ignore') as fp:
         code = fp.read()
-        code = code.replace('getch()','getchar(/*此语句由批改程序从getch替换*/)')
+    code = replace_code(code)
+
     with open(src,'w',encoding='GBK',errors='ignore') as fp:
         fp.write(code)
     return note
+
+def replace_code(source:str)->str:
+    source = source.replace('_getch','getch')
+    getch = re.findall('(getch *?\( *?\))',source)
+    for g in getch:
+        source = source.replace(g,'getchar(/*此语句由批改程序从getch替换*/)')
+    return source

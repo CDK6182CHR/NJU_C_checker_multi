@@ -3,7 +3,7 @@
 """
 from PyQt5.QtCore import QThread,pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
-import os
+import os,re
 
 class PopenThread(QThread):
     CheckFinished = pyqtSignal(str,str)
@@ -28,11 +28,16 @@ class PopenThread(QThread):
                 output_str = '执行错误\n'+repr(e)
 
             self.CheckFinished.emit(example,output_str)
+            self.cur.close()
         self.AllFinished.emit()
 
     def terminate(self):
+        back = '\\'
+        cmd = f'taskkill /f /im "{self.source.split(back)[-1]}.exe" '
+        out = os.popen(cmd)
+        print(cmd)
         try:
-            self.cur.close()
-        except:
-            pass
+            self.CheckFinished.emit('',out.read())
+        except Exception as e:
+            print("emit failed",repr(e))
         super().terminate()

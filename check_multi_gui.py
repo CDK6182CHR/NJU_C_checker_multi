@@ -15,7 +15,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0'
+        self.version = 'V1.0.1'
         self.date = '20190304'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
@@ -47,8 +47,7 @@ class checkWindow(QtWidgets.QMainWindow):
         btn0 = QtWidgets.QPushButton('0分(&0)')
         btnUnknown = QtWidgets.QPushButton('待定(&U)')
 
-        btnCheck.clicked.connect(lambda:self.checkAProblem(self.dirListWidget.currentItem().text(),
-                                                           self.exampleList.currentItem().data(-1)))
+        btnCheck.clicked.connect(self.check_clicked)
         btnNext.clicked.connect(self.next_clicked)
         btn3.clicked.connect(lambda:self.mark_btn_clicked(3))
         btn2.clicked.connect(lambda:self.mark_btn_clicked(2))
@@ -119,6 +118,7 @@ class checkWindow(QtWidgets.QMainWindow):
         dirEdit.setText(self.workDir)
 
         self.dirEdit = dirEdit
+        dirEdit.setMinimumWidth(800)
         label = QtWidgets.QLabel('工作路径(&C)')
         label.setBuddy(dirEdit)
         toolBar.addWidget(label)
@@ -273,6 +273,13 @@ class checkWindow(QtWidgets.QMainWindow):
         else:
             self.markLine.setText('待定')
 
+    def check_clicked(self):
+        if self.dirListWidget.currentItem() is None or self.exampleList.currentItem() is None:
+            QtWidgets.QMessageBox.warning(self,'错误','测试当前题目：请先选择题目源文件和测试用例！')
+            return
+        self.checkAProblem(self.dirListWidget.currentItem().text(),
+                           self.exampleList.currentItem().data(-1))
+
     def next_clicked(self):
         """
         下一题
@@ -329,7 +336,8 @@ class checkWindow(QtWidgets.QMainWindow):
         self.outEdit.setText(note)
         compile_cmd = f'gcc "{source}" -o "{source}.exe" --std=c99'
         out = os.popen(compile_cmd)
-        self.outEdit.setText('*************编译开始*************\n'+out.read()+
+        self.outEdit.setText(self.outEdit.toPlainText()+
+                             '\n*************编译开始*************\n'+out.read()+
                              '\n\n*************编译结束*************\n')
 
         popenThread = PopenThread(source,self.workDir,examples)
