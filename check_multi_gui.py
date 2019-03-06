@@ -9,14 +9,15 @@ import sys,os,re
 from popenThread import PopenThread
 from preProcessing import pre_code
 from datetime import datetime
+from highlighter import HighLighter
 
 
 class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0.1'
-        self.date = '20190304'
+        self.version = 'V1.0.2'
+        self.date = '20190306'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
@@ -99,14 +100,16 @@ class checkWindow(QtWidgets.QMainWindow):
         
         hlayout = QtWidgets.QHBoxLayout()
         outEdit = QtWidgets.QTextEdit()
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        outEdit.setFont(font)
         self.outEdit = outEdit
         hlayout.addWidget(outEdit)
 
-        from highLight import PythonHighlighter,TextEdit
-        codeEdit = TextEdit()
+        codeEdit = QtWidgets.QTextEdit()
         self.codeEdit = codeEdit
         hlayout.addWidget(codeEdit)
-        highLighter = PythonHighlighter(codeEdit.document())
+        self.highLighter = HighLighter(codeEdit.document())
 
 
         layout.addLayout(hlayout)
