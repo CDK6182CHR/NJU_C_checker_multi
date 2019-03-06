@@ -16,7 +16,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0.2'
+        self.version = 'V1.0.3'
         self.date = '20190306'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
@@ -73,21 +73,8 @@ class checkWindow(QtWidgets.QMainWindow):
         hlayout.addWidget(btn0)
         hlayout.addWidget(btnUnknown)
 
-        note = QtWidgets.QLineEdit()
-        self.noteLine = note
-        label = QtWidgets.QLabel("批注(&N)")
-        label.setBuddy(note)
-        hlayout.addWidget(label)
-        hlayout.addWidget(note)
-        layout.addLayout(hlayout)
-
-        hlayout = QtWidgets.QHBoxLayout()
-        btnTerminate = QtWidgets.QPushButton('中止(&A)')
-        btnTerminate.clicked.connect(self.terminate_test)
-        hlayout.addWidget(btnTerminate)
-
         hlayout.addWidget(QtWidgets.QLabel("当前题号"))
-        
+
         numberEdit = QtWidgets.QLineEdit()
         self.numberEdit = numberEdit
         hlayout.addWidget(numberEdit)
@@ -97,6 +84,35 @@ class checkWindow(QtWidgets.QMainWindow):
         hlayout.addWidget(QtWidgets.QLabel("当前文件名"))
         hlayout.addWidget(fileEdit)
         layout.addLayout(hlayout)
+
+        hlayout = QtWidgets.QHBoxLayout()
+
+        btnTerminate = QtWidgets.QPushButton('中止(&A)')
+        btnTerminate.clicked.connect(self.terminate_test)
+        hlayout.addWidget(btnTerminate)
+
+        btnLog = QtWidgets.QPushButton('本地记录(&L)')
+        btnLog.clicked.connect(self.local_log)
+        hlayout.addWidget(btnLog)
+
+        note = QtWidgets.QLineEdit()
+        self.noteLine = note
+        label = QtWidgets.QLabel("批注(&N)")
+        label.setBuddy(note)
+        hlayout.addWidget(label)
+        hlayout.addWidget(note)
+
+        layout.addLayout(hlayout)
+
+        for btn in (btnNext,btnTerminate,btnCheck,btn0,btn1,btn2,btn3,btnUnknown,btnLog):
+            btn.setFixedHeight(50)
+            btn.setMinimumWidth(120)
+
+        for l in (line,numberEdit,fileEdit,note):
+            l.setFixedHeight(40)
+            font = QtGui.QFont()
+            font.setPointSize(12)
+            l.setFont(font)
         
         hlayout = QtWidgets.QHBoxLayout()
         outEdit = QtWidgets.QTextEdit()
@@ -297,7 +313,7 @@ class checkWindow(QtWidgets.QMainWindow):
             fp.write(note+'\n')
             self.statusBar().showMessage(f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}")
         idx = self.dirListWidget.currentRow()
-        if 0<= idx < self.dirListWidget.count():
+        if 0 <= idx < self.dirListWidget.count():
             self.exampleList.setCurrentRow(self.exampleList.currentRow()+1)
             self.dirListWidget.setCurrentRow(self.dirListWidget.currentRow()+1)
         else:
@@ -410,6 +426,67 @@ class checkWindow(QtWidgets.QMainWindow):
         if self.popenThread is not None:
             self.popenThread.terminate()
             self.outEdit.setText(self.outEdit.toPlainText()+'\n\n##########\n测试中止\n##########')
+
+    def local_log(self):
+        """
+        显示当前【文件夹】相关的本地记录。
+        """
+        if self.fileListWidget.currentItem() is None:
+            QtWidgets.QMessageBox.warning(self,'错误','本地记录：请先选择文件夹')
+            return
+        curdir = self.fileListWidget.currentItem().text()
+
+        dir_logs = []
+        num_logs = []
+        from log2excel import numFromDirName
+
+        pro = QtWidgets.QProgressDialog(self)
+        pro.setWindowTitle('正在读取')
+        pro.setLabelText('正在读取文件')
+        pro.setRange(0,0)
+        with open(self.log_file,'r',encoding='utf-8',errors='ignore') as fp:
+            for line in fp:
+                # line尾巴上带了\n
+                data = line.split(',',maxsplit=3)
+                if len(data) != 4:
+                    continue
+                if data[0] == curdir:
+                    dir_logs.append(line)
+                elif numFromDirName(data[0]) == numFromDirName(curdir):
+                    num_logs.append(line)
+        pro.close()
+
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle('本地记录')
+        dialog.resize(800,800)
+        layout = QtWidgets.QVBoxLayout()
+
+        edit = QtWidgets.QTextEdit()
+        edit.setFont(QtGui.QFont('sim sum',12))
+
+        text = f"当前文件夹{curdir}的本地批改记录如下\n\n"
+
+        text += "===============同名文件夹===============\n"
+        text += "题号，得分，批注\n"
+        for d in dir_logs:
+            text += f"{d.split(',',maxsplit=1)[1]}"
+        text += f"\n\n===============其他可能是相同学号的文件夹===============\n"
+        text += "文件夹，题号，得分，批注\n"
+        text += f"当前学号：{numFromDirName(curdir)}\n"
+        for d in num_logs:
+            text += f"{d}"
+
+        edit.setText(text)
+        layout.addWidget(edit)
+
+        btnClose = QtWidgets.QPushButton('关闭')
+        btnClose.clicked.connect(dialog.close)
+        layout.addWidget(btnClose)
+
+        dialog.setLayout(layout)
+
+        dialog.exec_()
+
 
     def about(self):
         text = self.name+'  '+self.version+'\n'

@@ -89,5 +89,15 @@ def find_pos(dir_name:str,num:int,ws,num_col,start_col)->(int,int):
     col = start_col + (num-1)*2
     return stu_row,col
 
+def numFromDirName(name:str)->str:
+    """
+    从文件夹名中获取最可能的学号
+    """
+    nums = re.findall(r'(\d+)', name)
+    nums.sort(key=len, reverse=True)
+    if not nums:
+        return ""
+    return nums[0]
+
 if __name__ == '__main__':
     main(source_file,excel_file,error_log,start_time=None)
