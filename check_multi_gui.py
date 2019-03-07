@@ -277,7 +277,7 @@ class checkWindow(QtWidgets.QMainWindow):
                     code_dir = a
                     if '_MACOSX' not in a:
                         break
-            if code_dir is not None:
+            if code_dir is not None and '_MACOSX' not in code_dir:
                 break
         for t in os.scandir(code_dir):
             if not t.is_dir() and ('.c' in t.name or '.C' in t.name) and '.exe' not in t.name:
