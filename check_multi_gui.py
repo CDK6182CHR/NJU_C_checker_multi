@@ -16,8 +16,8 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0.3'
-        self.date = '20190306'
+        self.version = 'V1.0.4'
+        self.date = '20190307'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
@@ -142,6 +142,9 @@ class checkWindow(QtWidgets.QMainWindow):
         label.setBuddy(dirEdit)
         toolBar.addWidget(label)
         toolBar.addWidget(dirEdit)
+        btnView = QtWidgets.QPushButton('浏览..(&V)')
+        btnView.clicked.connect(self.view_dir)
+        toolBar.addWidget(btnView)
         btnRefresh = QtWidgets.QPushButton("刷新工作区(&R)",self)
         btnRefresh.clicked.connect(self.refresh_workdir)
         dirEdit.editingFinished.connect(btnRefresh.click)
@@ -272,7 +275,8 @@ class checkWindow(QtWidgets.QMainWindow):
             for t in c:
                 if '.c'in t or '.C' in t:
                     code_dir = a
-                    break
+                    if '_MACOSX' not in a:
+                        break
             if code_dir is not None:
                 break
         for t in os.scandir(code_dir):
@@ -282,7 +286,7 @@ class checkWindow(QtWidgets.QMainWindow):
         if self.dirListWidget.count():
             self.dirListWidget.setCurrentRow(0)
         else:
-            QtWidgets.QMessageBox.warning("找不到源文件！")
+            QtWidgets.QMessageBox.warning(self,'错误',"找不到源文件！")
 
 
     # slots
@@ -322,6 +326,12 @@ class checkWindow(QtWidgets.QMainWindow):
             self.btnNextDir.click()
         self.noteLine.setText('')
         self.markLine.setText('3')
+
+    def view_dir(self):
+        dir_ = QtWidgets.QFileDialog.getExistingDirectory(self,'选择工作区文件夹')
+        if not dir_:
+            return
+        self.dirEdit.setText(dir_)
 
     def refresh_workdir(self):
         """
