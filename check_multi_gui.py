@@ -16,11 +16,12 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0.4'
-        self.date = '20190307'
+        self.version = 'V1.0.5'
+        self.date = '20190308'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
+        self.fastNotes = []
         self.popenThread = None
         self.log_file = None
         self.initUI()
@@ -79,10 +80,20 @@ class checkWindow(QtWidgets.QMainWindow):
         self.numberEdit = numberEdit
         hlayout.addWidget(numberEdit)
 
-        fileEdit = QtWidgets.QLineEdit()
-        self.fileEdit = fileEdit
-        hlayout.addWidget(QtWidgets.QLabel("当前文件名"))
-        hlayout.addWidget(fileEdit)
+        btnAdd = QtWidgets.QPushButton('+')
+        btnAdd.clicked.connect(lambda:self.modify_number(1))
+        btnAdd.setMaximumWidth(40)
+        hlayout.addWidget(btnAdd)
+
+        btnMinus = QtWidgets.QPushButton('-')
+        btnMinus.clicked.connect(lambda:self.modify_number(-1))
+        btnMinus.setMaximumWidth(40)
+        hlayout.addWidget(btnMinus)
+
+        # fileEdit = QtWidgets.QLineEdit()
+        # self.fileEdit = fileEdit
+        # hlayout.addWidget(QtWidgets.QLabel("当前文件名"))
+        # hlayout.addWidget(fileEdit)
         layout.addLayout(hlayout)
 
         hlayout = QtWidgets.QHBoxLayout()
@@ -102,13 +113,19 @@ class checkWindow(QtWidgets.QMainWindow):
         hlayout.addWidget(label)
         hlayout.addWidget(note)
 
+        btnFast = QtWidgets.QPushButton('快速批注..(&F)')
+        btnFast.clicked.connect(self.fast_note)
+        hlayout.addWidget(btnFast)
+
         layout.addLayout(hlayout)
 
-        for btn in (btnNext,btnTerminate,btnCheck,btn0,btn1,btn2,btn3,btnUnknown,btnLog):
+        for btn in (btnNext,btnTerminate,btnCheck,btn0,btn1,btn2,btn3,btnUnknown,btnLog,btnFast):
             btn.setFixedHeight(50)
             btn.setMinimumWidth(120)
+        for btn in (btnAdd,btnMinus):
+            btn.setFixedHeight(50)
 
-        for l in (line,numberEdit,fileEdit,note):
+        for l in (line,numberEdit,note):
             l.setFixedHeight(40)
             font = QtGui.QFont()
             font.setPointSize(12)
@@ -147,6 +164,7 @@ class checkWindow(QtWidgets.QMainWindow):
         toolBar.addWidget(btnView)
         btnRefresh = QtWidgets.QPushButton("刷新工作区(&R)",self)
         btnRefresh.clicked.connect(self.refresh_workdir)
+        self.btnRefresh = btnRefresh
         dirEdit.editingFinished.connect(btnRefresh.click)
         toolBar.addWidget(btnRefresh)
 
@@ -263,6 +281,21 @@ class checkWindow(QtWidgets.QMainWindow):
             item.setText(';'.join(a))
             self.exampleList.addItem(item)
 
+    def getFastNotes(self):
+        """
+        从inputs/fastnotes.txt文件读取快速批注预案。
+        """
+        self.fastNotes.clear()
+        try:
+            fp = open('inputs/fastnotes.txt','r',encoding='utf-8',errors='ignore')
+        except:
+            return
+        else:
+            for line in fp:
+                line = line.strip()
+                if line:
+                    self.fastNotes.append(line)
+
     def loadDir(self,dir_name):
         """
         更新切换当前作业dir，初始化listWidget。
@@ -303,11 +336,56 @@ class checkWindow(QtWidgets.QMainWindow):
         self.checkAProblem(self.dirListWidget.currentItem().text(),
                            self.exampleList.currentItem().data(-1))
 
+    def fast_note(self):
+        """
+        显示快速批注列表，选择要批注的条目返回。
+        """
+        if not self.fastNotes:
+            QtWidgets.QMessageBox.information(self,'提示','没有快速批注文档。可将最可能用到的批注提前写好'
+                                                        '放在inputs/fastnotes.txt文件内，一行一条。')
+            return
+
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle('快速批注')
+
+        layout = QtWidgets.QVBoxLayout()
+        listWidget = QtWidgets.QListWidget()
+
+        listWidget.addItems(self.fastNotes)
+        layout.addWidget(listWidget)
+
+        btnOk = QtWidgets.QPushButton('确定')
+
+        btnCancel = QtWidgets.QPushButton('取消')
+        btnCancel.clicked.connect(dialog.close)
+        btnOk.clicked.connect(lambda:self.fast_note_ok(listWidget,dialog))
+        hlayout = QtWidgets.QHBoxLayout()
+        hlayout.addWidget(btnOk)
+        hlayout.addWidget(btnCancel)
+
+        listWidget.itemDoubleClicked.connect(btnOk.click)
+        listWidget.setCurrentRow(0)
+        layout.addLayout(hlayout)
+
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def fast_note_ok(self,listWidget:QtWidgets.QListWidget,dialog:QtWidgets.QDialog):
+        item = listWidget.currentItem()
+        if item is None:
+            return
+        self.noteLine.setText(item.text())
+        dialog.close()
+
     def next_clicked(self):
         """
         下一题
         """
         # 先提交上一题的更改
+        if self.fileListWidget.currentIndex() is None:
+            self.statusBar().showMessage(f'{datetime.now().strftime("%H:%M:%S")} 当前选中为空，无法提交数据！')
+            return
+        status = ""
         with open(self.log_file,'a',encoding='utf-8',errors='ignore') as fp:
             # 文件夹全名，题号，得分，批注
             note = f'{self.fileListWidget.currentItem().text()},'\
@@ -315,23 +393,30 @@ class checkWindow(QtWidgets.QMainWindow):
                      f'{self.markLine.text()},'\
                      f'{self.noteLine.text()}'
             fp.write(note+'\n')
-            self.statusBar().showMessage(f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}")
+            status += f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}"
         idx = self.dirListWidget.currentRow()
-        if 0 <= idx < self.dirListWidget.count():
+        if 0 <= idx < self.dirListWidget.count()-1:
             self.exampleList.setCurrentRow(self.exampleList.currentRow()+1)
             self.dirListWidget.setCurrentRow(self.dirListWidget.currentRow()+1)
         else:
-            self.statusBar().showMessage(f'{datetime.now().strftime("%H:%M:%S")}'
-                                         f'最后一个文件，自动进入下一个文件夹。')
+            status += "||最后一个文件，自动进入下一个文件夹"
             self.btnNextDir.click()
+        self.statusBar().showMessage(status)
         self.noteLine.setText('')
         self.markLine.setText('3')
+        num = self.numberEdit.text()
+        try:
+            n = int(num)
+        except:
+            n = 0
+        self.numberEdit.setText(str(n+1))
 
     def view_dir(self):
         dir_ = QtWidgets.QFileDialog.getExistingDirectory(self,'选择工作区文件夹')
         if not dir_:
             return
         self.dirEdit.setText(dir_)
+        self.btnRefresh.click()
 
     def refresh_workdir(self):
         """
@@ -356,6 +441,7 @@ class checkWindow(QtWidgets.QMainWindow):
         with open(self.log_file,'a',encoding='utf-8',errors='ignore') as fp:
             fp.write(f'//打开时间：{datetime.now().strftime("%y-%m-%d %H:%M:%S")}\n')
         self.getExamples()
+        self.getFastNotes()
 
     def checkAProblem(self,source:str,examples:list):
         """
@@ -402,6 +488,7 @@ class checkWindow(QtWidgets.QMainWindow):
             except:
                 pass
             self.loadDir(item.text())
+        self.numberEdit.setText("1")
 
     def dir_line_changed(self,item:QtWidgets.QListWidgetItem):
         """
@@ -419,9 +506,9 @@ class checkWindow(QtWidgets.QMainWindow):
                 self.codeEdit.setText(fp.read())
         except Exception as e:
             QtWidgets.QMessageBox.warning(self,'错误','文件错误\n'+repr(e))
-        self.fileEdit.setText(item.text())
-        self.numberEdit.setText(str(idx+1))
-
+        # self.fileEdit.setText(item.text())
+        # self.numberEdit.setText(str(idx+1))
+        # 2019.03.08：改为在next中调整。
     def example_changed(self,item:QtWidgets.QListWidgetItem):
         if item is None:
             return
@@ -497,6 +584,16 @@ class checkWindow(QtWidgets.QMainWindow):
 
         dialog.exec_()
 
+    def modify_number(self,t:int):
+        """
+        将当前题号调整1或-1.
+        """
+        n = self.numberEdit.text()
+        try:
+            num = int(n)
+        except:
+            num = 0
+        self.numberEdit.setText(str(t+num))
 
     def about(self):
         text = self.name+'  '+self.version+'\n'
