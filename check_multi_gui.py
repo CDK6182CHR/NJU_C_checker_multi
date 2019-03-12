@@ -643,7 +643,9 @@ class checkWindow(QtWidgets.QMainWindow):
         关闭时将记录文件备份在代码目录下。
         """
         os.chdir(self.workDir)
-        os.system(f"copy log.txt log_bak{datetime.now().strftime('%Y-%m-%d')}.txt")
+        os.system("mkdir backups")
+        back = '\\'
+        os.system(f"copy log.txt backups{back}log_bak{datetime.now().strftime('%Y-%m-%d')}.txt")
         print("文件备份完毕")
         a0.accept()
 
