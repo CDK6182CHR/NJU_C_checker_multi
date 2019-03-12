@@ -395,6 +395,13 @@ class checkWindow(QtWidgets.QMainWindow):
             fp.write(note+'\n')
             status += f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}"
         idx = self.dirListWidget.currentRow()
+        # 2019.03.12调整：设置题号，再下一题。防止进入下一个时直接变成2.
+        num = self.numberEdit.text()
+        try:
+            n = int(num)
+        except:
+            n = 0
+        self.numberEdit.setText(str(n+1))
         if 0 <= idx < self.dirListWidget.count()-1:
             self.exampleList.setCurrentRow(self.exampleList.currentRow()+1)
             self.dirListWidget.setCurrentRow(self.dirListWidget.currentRow()+1)
@@ -404,12 +411,8 @@ class checkWindow(QtWidgets.QMainWindow):
         self.statusBar().showMessage(status)
         self.noteLine.setText('')
         self.markLine.setText('3')
-        num = self.numberEdit.text()
-        try:
-            n = int(num)
-        except:
-            n = 0
-        self.numberEdit.setText(str(n+1))
+
+
 
     def view_dir(self):
         dir_ = QtWidgets.QFileDialog.getExistingDirectory(self,'选择工作区文件夹')

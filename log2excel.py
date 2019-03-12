@@ -4,11 +4,11 @@
 错误文件记录：
 错误代码，原始记录。
 """
-source_file = 'source/log.txt'
-excel_file = 'source/《程序设计》-2017地海-作业批改结果 【第2次】.xlsx'
-error_log = 'output/error_log.txt'
-# out_excel = 'source/《程序设计》-2017地海-作业批改结果 【第2次】-out.xlsx'
+source_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\log_pad.txt"
+excel_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\《程序设计》-2017地海-作业批改结果 【第2次】.xlsx"
 
+# out_excel = 'source/《程序设计》-2017地海-作业批改结果 【第2次】-out.xlsx'
+error_log = r"output/error_log.txt"
 import openpyxl
 from datetime import datetime
 import re
@@ -24,7 +24,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
     if start_time is None:
         started = True
     for line in src:
-        if line[:2] == '//':
+        if line[:2] == '//' or '//' in line: # utf-8-bom
             if not started:
                 tm = datetime.strptime(line,'//打开时间：%y-%m-%d %H:%M:%S')
                 if tm >= start_time:
@@ -35,8 +35,10 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
         line = line.strip()
         if not line:
             continue
-
         dir_name,num,marks,note = line.split(',',maxsplit=3)
+        if not num:
+            print("invalid num",line)
+            num=10
         row,col = find_pos(dir_name,int(num),ws,num_col,start_col)
 
         if row == -1:

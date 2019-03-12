@@ -1,7 +1,7 @@
 """
 用于执行命令的线程。只执行程序并写入输出内容，程序应该已经编译完毕。
 """
-from PyQt5.QtCore import QThread,pyqtSignal
+from PyQt5.QtCore import QThread,pyqtSignal,QProcess
 from PyQt5.QtWidgets import QMessageBox
 import os,re
 
