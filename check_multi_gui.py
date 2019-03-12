@@ -16,7 +16,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.1.0'
+        self.version = 'V1.1.1'
         self.date = '20190312'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
@@ -42,7 +42,9 @@ class checkWindow(QtWidgets.QMainWindow):
         hlayout = QtWidgets.QHBoxLayout()
 
         btnCheck = QtWidgets.QPushButton('测试(&T)')
-        btnNext = QtWidgets.QPushButton('提交(&S)')
+        btnNext = QtWidgets.QPushButton('下一题(&X)')
+        btnSubmit = QtWidgets.QPushButton('提交(&S)')
+        self.btnSubmit = btnSubmit
         btn3 = QtWidgets.QPushButton('3分(&3)')
         btn2 = QtWidgets.QPushButton('2分(&2)')
         btn1 = QtWidgets.QPushButton('1分(&1)')
@@ -51,6 +53,7 @@ class checkWindow(QtWidgets.QMainWindow):
 
         btnCheck.clicked.connect(self.check_clicked)
         btnNext.clicked.connect(self.next_clicked)
+        btnSubmit.clicked.connect(self.submit_clicked)
         btn3.clicked.connect(lambda:self.mark_btn_clicked(3))
         btn2.clicked.connect(lambda:self.mark_btn_clicked(2))
         btn1.clicked.connect(lambda:self.mark_btn_clicked(1))
@@ -63,6 +66,7 @@ class checkWindow(QtWidgets.QMainWindow):
         line.setMaximumWidth(80)
 
         hlayout.addWidget(btnNext)
+        hlayout.addWidget(btnSubmit)
         hlayout.addWidget(btnCheck)
         label = QtWidgets.QLabel('得分(&M)')
         label.setBuddy(line)
@@ -119,7 +123,7 @@ class checkWindow(QtWidgets.QMainWindow):
 
         layout.addLayout(hlayout)
 
-        for btn in (btnNext,btnTerminate,btnCheck,btn0,btn1,btn2,btn3,btnUnknown,btnLog,btnFast):
+        for btn in (btnNext,btnTerminate,btnCheck,btn0,btn1,btn2,btn3,btnUnknown,btnLog,btnFast,btnSubmit):
             btn.setFixedHeight(50)
             btn.setMinimumWidth(120)
         for btn in (btnAdd,btnMinus):
@@ -380,11 +384,10 @@ class checkWindow(QtWidgets.QMainWindow):
         self.noteLine.setText(item.text())
         dialog.close()
 
-    def next_clicked(self):
+    def submit_clicked(self):
         """
-        下一题
+        提交
         """
-        # 先提交上一题的更改
         if self.fileListWidget.currentIndex() is None:
             self.statusBar().showMessage(f'{datetime.now().strftime("%H:%M:%S")} 当前选中为空，无法提交数据！')
             return
@@ -419,6 +422,17 @@ class checkWindow(QtWidgets.QMainWindow):
                      f'{self.noteLine.text()}'
             fp.write(note+'\n')
             status += f"{datetime.now().strftime('%H:%M:%S')} 写入记录：{note}"
+        self.statusBar().showMessage(status)
+        self.noteLine.setText('')
+        self.markLine.setText('3')
+
+    def next_clicked(self):
+        """
+        下一题
+        """
+        # 先提交上一题的更改
+        self.btnSubmit.click()
+        status = self.statusBar().currentMessage()
         idx = self.dirListWidget.currentRow()
         # 2019.03.12调整：设置题号，再下一题。防止进入下一个时直接变成2.
         num = self.numberEdit.text()
