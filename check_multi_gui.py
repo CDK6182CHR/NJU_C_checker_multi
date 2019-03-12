@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets,QtGui,QtCore
 from PyQt5.QtCore import Qt
 import sys,os,re
 from popenThread import PopenThread
-from preProcessing import pre_code
+from preProcessing import pre_code,shell_cmd,read_out,compile_cmd
 from datetime import datetime
 from highlighter import HighLighter
 
@@ -16,8 +16,8 @@ class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.0.5'
-        self.date = '20190308'
+        self.version = 'V1.1.0'
+        self.date = '20190312'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
@@ -134,13 +134,15 @@ class checkWindow(QtWidgets.QMainWindow):
         hlayout = QtWidgets.QHBoxLayout()
         outEdit = QtWidgets.QTextEdit()
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(11)
         outEdit.setFont(font)
         self.outEdit = outEdit
+        QtWidgets.QScroller.grabGesture(self.outEdit,QtWidgets.QScroller.TouchGesture)
         hlayout.addWidget(outEdit)
 
         codeEdit = QtWidgets.QTextEdit()
         self.codeEdit = codeEdit
+        QtWidgets.QScroller.grabGesture(self.codeEdit, QtWidgets.QScroller.TouchGesture)
         hlayout.addWidget(codeEdit)
         self.highLighter = HighLighter(codeEdit.document())
 
@@ -347,6 +349,7 @@ class checkWindow(QtWidgets.QMainWindow):
 
         dialog = QtWidgets.QDialog(self)
         dialog.setWindowTitle('快速批注')
+        dialog.resize(800,800)
 
         layout = QtWidgets.QVBoxLayout()
         listWidget = QtWidgets.QListWidget()
@@ -386,10 +389,32 @@ class checkWindow(QtWidgets.QMainWindow):
             self.statusBar().showMessage(f'{datetime.now().strftime("%H:%M:%S")} 当前选中为空，无法提交数据！')
             return
         status = ""
+        number_str = self.numberEdit.text()
+        try:
+            number = int(number_str)
+        except:
+            number=-1
+        if not 0<number<=self.dirListWidget.count():
+            output = QtWidgets.QMessageBox.question(self,'问题','当前题号似乎不在题目范围内。是否继续提交？',
+                                                    QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if output != QtWidgets.QMessageBox.Yes:
+                self.statusBar().showMessage(f"{datetime.now().strftime('%H:%M:%S')} 放弃提交")
+                return
+        try:
+            self.popenThread.terminate()
+        except:
+            pass
         with open(self.log_file,'a',encoding='utf-8',errors='ignore') as fp:
-            # 文件夹全名，题号，得分，批注
-            note = f'{self.fileListWidget.currentItem().text()},'\
-                     f'{self.numberEdit.text()},'\
+            # 文件夹全名，文件名, 批改时间, 题号，得分，批注
+            cur_file_item = self.dirListWidget.currentItem()
+            if cur_file_item is not None:
+                cur_file = cur_file_item.text()
+            else:
+                cur_file = 'NA'
+            note = f'{self.fileListWidget.currentItem().text()},' \
+                   f'{cur_file},' \
+                   f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")},' \
+                   f'{number_str},'\
                      f'{self.markLine.text()},'\
                      f'{self.noteLine.text()}'
             fp.write(note+'\n')
@@ -452,11 +477,19 @@ class checkWindow(QtWidgets.QMainWindow):
         """
         note = pre_code(source)
         self.outEdit.setText(note)
-        compile_cmd = f'gcc "{source}" -o "{source}.exe" --std=c99'
-        out = os.popen(compile_cmd)
-        self.outEdit.setText(self.outEdit.toPlainText()+
-                             '\n*************编译开始*************\n'+out.read()+
-                             '\n\n*************编译结束*************\n')
+        cmd_single = compile_cmd(source)
+        cp_cmd = shell_cmd(cmd_single)
+
+        p = QtCore.QProcess(self)
+        p.start('cmd')
+        p.waitForStarted()
+        p.write(bytes(cp_cmd,'GBK'))
+        p.waitForFinished(2000)
+        out_str = read_out(p.readAll(),cmd_single)
+
+        self.outEdit.setHtml(self.outEdit.toHtml()+
+                             '*************编译开始*************<br>'+out_str+
+                             '<br>*************编译结束*************<br>')
 
         popenThread = PopenThread(source,self.workDir,examples)
         self.popenThread = popenThread
@@ -466,12 +499,12 @@ class checkWindow(QtWidgets.QMainWindow):
 
     # slots
     def check_finished(self,example,output_str):
-        self.outEdit.setText(self.outEdit.toPlainText()
-                             + f'\n\n---------测试用例 {example}---------\n' + output_str)
+        self.outEdit.setHtml(self.outEdit.toHtml()
+        + f'<br><span style="color:#008000;">---------测试用例 {example}---------</span><br>' + output_str)
 
     def check_all_finished(self):
-        self.outEdit.setText(self.outEdit.toPlainText()
-                             + '\n\n===========测试正常结束===========\n')
+        self.outEdit.setHtml(self.outEdit.toHtml()
+                             + '<br>===========测试正常结束===========<br>')
 
     def next_dir(self):
         listWidget = self.fileListWidget
@@ -525,7 +558,7 @@ class checkWindow(QtWidgets.QMainWindow):
     def terminate_test(self):
         if self.popenThread is not None:
             self.popenThread.terminate()
-            self.outEdit.setText(self.outEdit.toPlainText()+'\n\n##########\n测试中止\n##########')
+            self.outEdit.setHtml(self.outEdit.toHtml()+'<br>##########<br>测试中止<br>##########')
 
     def local_log(self):
         """
@@ -567,11 +600,11 @@ class checkWindow(QtWidgets.QMainWindow):
         text = f"当前文件夹{curdir}的本地批改记录如下\n\n"
 
         text += "===============同名文件夹===============\n"
-        text += "题号，得分，批注\n"
+        text += "文件名，批改时间，题号，得分，批注\n"
         for d in dir_logs:
             text += f"{d.split(',',maxsplit=1)[1]}"
         text += f"\n\n===============其他可能是相同学号的文件夹===============\n"
-        text += "文件夹，题号，得分，批注\n"
+        text += "文件夹，文件名，批改时间，题号，得分，批注\n"
         text += f"当前学号：{numFromDirName(curdir)}\n"
         for d in num_logs:
             text += f"{d}"

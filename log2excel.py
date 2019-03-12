@@ -3,6 +3,7 @@
 文件夹全名,题号,得分,批注。
 错误文件记录：
 错误代码，原始记录。
+2019.03.12：不再兼容第一次的记录文档。
 """
 source_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\log_pad.txt"
 excel_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\《程序设计》-2017地海-作业批改结果 【第2次】.xlsx"
@@ -24,6 +25,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
     if start_time is None:
         started = True
     for line in src:
+        line = line.replace(chr(0xFEFF),'')
         if line[:2] == '//' or '//' in line: # utf-8-bom
             if not started:
                 tm = datetime.strptime(line,'//打开时间：%y-%m-%d %H:%M:%S')
@@ -35,7 +37,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
         line = line.strip()
         if not line:
             continue
-        dir_name,num,marks,note = line.split(',',maxsplit=3)
+        dir_name,file_name,tm,num,marks,note = line.split(',',maxsplit=5)
         if not num:
             print("invalid num",line)
             num=10

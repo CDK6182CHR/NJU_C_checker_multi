@@ -2,6 +2,7 @@
 对源代码等的预处理，方便修改
 """
 import chardet,re
+from PyQt5.QtCore import QByteArray
 
 def pre_code(src:str)->str:
     """
@@ -35,3 +36,44 @@ def replace_code(source:str)->str:
     for g in getch:
         source = source.replace(g,'getchar(/*此语句由批改程序从getch替换*/)')
     return source
+
+def compile_cmd(source:str)->str:
+    """
+    返回编译命令。
+    """
+    return f'gcc "{source}" -o "{source}.exe" --std=c99'
+
+def run_cmd(source:str,example_file:str)->str:
+    """
+    返回执行程序命令。不包含尾部换行符。
+    """
+    return f'"{source}.exe" < "{example_file}"'
+
+def shell_cmd(cmd:str)->str:
+    """
+    将要执行的语句封装成实际要发送给程序的形式，并编译为字节码
+    """
+    cmds = f"""\
+@echo off
+echo ==================Python_C_checker_split_line=====================
+{cmd}
+echo ==================Python_C_checker_split_line=====================
+    """
+    return cmds
+
+def read_out(output:QByteArray,cmd:str)->str:
+    """
+    cmd: 输入的命令内容。用其他颜色表示。
+    """
+    o = str(bytes(output),'GBK')
+    osp = o.split('==================Python_C_checker_split_line=====================')
+    if len(osp) < 3:
+        print("意外的输出内容",o)
+        s = o
+    else:
+        s = osp[2].strip().rstrip('echo')
+    s = s.replace('\n','<br>')
+    print("read_out",cmd)
+    s = s.replace(cmd,
+                  f'<span style="color:#0000ff;">&nbsp;$&gt;&nbsp;{cmd.replace("<","&lt;")}</span><br>')
+    return s
