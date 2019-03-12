@@ -460,7 +460,7 @@ class checkWindow(QtWidgets.QMainWindow):
         try:
             os.chdir(self.workDir)
             for t in os.scandir(self.workDir):
-                if t.is_dir() and t.name not in ('__pycache__','inputs'):
+                if t.is_dir() and t.name not in ('__pycache__','inputs','backups'):
                     self.fileListWidget.addItem(t.name)
         except Exception as e:
             QtWidgets.QMessageBox.warning(self,'错误','文件夹非法\n'+repr(e))
