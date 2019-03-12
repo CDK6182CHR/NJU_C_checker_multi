@@ -638,6 +638,15 @@ class checkWindow(QtWidgets.QMainWindow):
         text += 'https://github.com/CDK6182CHR/NJU_C_checker_multi'
         QtWidgets.QMessageBox.about(self,'关于',text)
 
+    def closeEvent(self, a0: QtGui.QCloseEvent):
+        """
+        关闭时将记录文件备份在代码目录下。
+        """
+        os.chdir(self.workDir)
+        os.system(f"copy log.txt log_bak{datetime.now().strftime('%Y-%m-%d')}.txt")
+        print("文件备份完毕")
+        a0.accept()
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     w = checkWindow()
