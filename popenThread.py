@@ -37,13 +37,17 @@ class PopenThread(QThread):
         self.AllFinished.emit()
 
     def terminate(self):
+        t = self.process.read(1000) # 莫名其妙的很长的输出结果,只要前1000个即可
+        print("read all finished",len(bytearray(t)))
+        self.CheckFinished.emit(self.example, read_out(t, self.cmd))
+        print("emit finished")
+
         back = '\\'
-        cmd = f'taskkill /f /im "{self.source.split(back)[-1]}.exe" '
+        cmd = f'taskkill /f /im "{self.source.split(back)[-1]}.exe" \n'
         out = os.popen(cmd)
         try:
             self.CheckFinished.emit('',out.read())
         except Exception as e:
             print("emit failed",repr(e))
-        self.CheckFinished.emit(self.example,read_out(self.process.readAll(),self.cmd))
         self.process.terminate()
         super().terminate()

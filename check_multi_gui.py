@@ -1,6 +1,6 @@
 """
 UTF-8编码的文本文档来记录程序运行数据。每次确认都记录数据。数据格式类似csv：
-文件夹全名,题号,得分,批注。
+文件夹全名,源文件名,批改时间,题号,得分,批注。
 """
 
 from PyQt5 import QtWidgets,QtGui,QtCore
@@ -11,13 +11,15 @@ from preProcessing import pre_code,shell_cmd,read_out,compile_cmd
 from datetime import datetime
 from highlighter import HighLighter
 
+import cgitb
+cgitb.enable(format='text')
 
 class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         super().__init__()
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.1.1'
-        self.date = '20190312'
+        self.version = 'V1.1.2'
+        self.date = '20190313'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
@@ -252,6 +254,10 @@ class checkWindow(QtWidgets.QMainWindow):
         textEdit = QtWidgets.QTextEdit()
         dock.setWidget(textEdit)
         self.exampleEdit = textEdit
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        textEdit.setFont(font)
+        QtWidgets.QScroller.grabGesture(textEdit,QtWidgets.QScroller.TouchGesture)
 
         self.addDockWidget(Qt.RightDockWidgetArea,dock)
 
@@ -504,7 +510,8 @@ class checkWindow(QtWidgets.QMainWindow):
         self.outEdit.setHtml(self.outEdit.toHtml()+
                              '*************编译开始*************<br>'+out_str+
                              '<br>*************编译结束*************<br>')
-
+        # 编译结束，更新窗口一次
+        QtCore.QCoreApplication.processEvents()
         popenThread = PopenThread(source,self.workDir,examples)
         self.popenThread = popenThread
         popenThread.CheckFinished.connect(self.check_finished)
@@ -570,9 +577,11 @@ class checkWindow(QtWidgets.QMainWindow):
         self.exampleEdit.setText('\n\n====================\n'.join(example_contents))
 
     def terminate_test(self):
+        print("terminate_test")
         if self.popenThread is not None:
             self.popenThread.terminate()
             self.outEdit.setHtml(self.outEdit.toHtml()+'<br>##########<br>测试中止<br>##########')
+        print("terminate_test_ok")
 
     def local_log(self):
         """

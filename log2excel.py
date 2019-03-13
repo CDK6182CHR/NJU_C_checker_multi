@@ -41,7 +41,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
         if not num:
             print("invalid num",line)
             num=10
-        row,col = find_pos(dir_name,int(num),ws,num_col,start_col)
+        row,col = find_pos(dir_name,file_name,int(num),ws,num_col,start_col)
 
         if row == -1:
             print('姓名与学号不匹配(-1):',line)
@@ -66,7 +66,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
     elog.close()
     src.close()
 
-def find_pos(dir_name:str,num:int,ws,num_col,start_col)->(int,int):
+def find_pos(dir_name:str,file_name:str,num:int,ws,num_col,start_col)->(int,int):
     """
     根据文件夹名和题号返回【成绩格所在的行列号】。错误代码：
     若姓名学号不匹配，返回-1，-1.
@@ -87,7 +87,8 @@ def find_pos(dir_name:str,num:int,ws,num_col,start_col)->(int,int):
     if not stu_row:
         return -2,-2
 
-    if str(ws.cell(stu_row,num_col+1).value).strip() not in dir_name:
+    nameInList = str(ws.cell(stu_row,num_col+1).value).strip()
+    if  nameInList not in dir_name and nameInList not in file_name:
         return -1,-1
 
     col = start_col + (num-1)*2
