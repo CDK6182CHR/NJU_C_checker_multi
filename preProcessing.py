@@ -87,12 +87,14 @@ def read_out(output:QByteArray,cmd:str)->str:
         print("cannot decode output")
         return "Decode error"
 
+    print("read out before split",o)
     osp = o.split('==================Python_C_checker_split_line=====================')
     if len(osp) < 3:
         print("意外的输出内容",o)
         s = o
     else:
         s = osp[2].strip().rstrip('echo')
+    print("read out",s)
     s = s.replace('\n','<br>')
     s = s.replace(cmd,
                   f'<span style="color:#0000ff;">$&gt;&nbsp;{cmd.replace("<","&lt;")}</span><br>')

@@ -33,7 +33,8 @@ class PopenThread(QThread):
             p.waitForFinished()
             output = p.readAllStandardOutput()
             # print("output is",output)
-            self.CheckFinished.emit(example,read_out(output,cmd_single))
+            self.CheckFinished.emit(example,read_out(output,cmd_single)+
+                                    read_out(p.readAllStandardError(),cmd_single))
         self.AllFinished.emit()
 
     def terminate(self):

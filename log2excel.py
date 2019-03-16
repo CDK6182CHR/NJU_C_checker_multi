@@ -5,16 +5,17 @@
 错误代码，原始记录。
 2019.03.12：不再兼容第一次的记录文档。
 """
-source_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\log_pad.txt"
-excel_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第02次作业\《程序设计》-2017地海-作业批改结果 【第2次】.xlsx"
+source_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第03次作业\log_pad.txt"
+excel_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第03次作业\《程序设计》-2017地海-作业批改结果【第3次】.xlsx"
+problem_count = 9  # 题目总数。超过这个数的题号将被忽略
 
 # out_excel = 'source/《程序设计》-2017地海-作业批改结果 【第2次】-out.xlsx'
-error_log = r"output/error_log.txt"
 import openpyxl
 from datetime import datetime
 import re
+error_log = f"output/error_log_{datetime.now().strftime('%Y-%m-%d')}.txt"
 
-def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datetime=None):
+def main(source_file,excel_file,error_log,*,num_col=2,start_col=5,problem_count=8,start_time:datetime=None):
     elog = open(error_log,'a',encoding='utf-8',errors='ignore')
     elog.write(f'//{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}写入\n')
     src = open(source_file,'r',encoding='utf-8',errors='ignore')
@@ -24,6 +25,7 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
     started = False
     if start_time is None:
         started = True
+    total_note_col = start_col + 2*problem_count
     for line in src:
         line = line.replace(chr(0xFEFF),'')
         if line[:2] == '//' or '//' in line: # utf-8-bom
@@ -38,9 +40,14 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
         if not line:
             continue
         dir_name,file_name,tm,num,marks,note = line.split(',',maxsplit=5)
-        if not num:
+        try:
+            num = int(num)
+        except ValueError:
             print("invalid num",line)
-            num=10
+            num=-1
+        if not num<=problem_count:
+            print("非法的题号(-4):",num,line)
+            elog.write(f"-4,{line}\n")
         row,col = find_pos(dir_name,file_name,int(num),ws,num_col,start_col)
 
         if row == -1:
@@ -59,6 +66,17 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
                 marks_int = marks
             ws.cell(row,col,value=marks_int)
             ws.cell(row,col+1,value=note)
+
+            # 在备注一栏中标注题号对应的文件名。每条记录用||包围，方便正则查找。
+            file_note = ws.cell(row, total_note_col).value
+            if not file_note or not isinstance(file_note,str):
+                if file_note:
+                    print("strange filenote",file_note)
+                file_note = "题目对应源文件|"
+            newlog = make_problem_file_log(file_note,num,file_name)
+            ws.cell(row,total_note_col,value=newlog)
+
+
     ws.cell(ws.max_row+1,1,
             value=f'此文件由批改程序在{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}根据记录文件写入')
 
@@ -66,14 +84,28 @@ def main(source_file,excel_file,error_log,num_col=2,start_col=5,start_time:datet
     elog.close()
     src.close()
 
+def make_problem_file_log(previous:str,pro_num:int,filename:str)->str:
+    """
+    生成并返回题号对应文件名记录。
+    """
+    pro_files = previous.split('|')[1:]
+    pro_file_dict = {}
+    for pro_file_log in pro_files:
+        if not pro_file_log:
+            continue
+        num, file = pro_file_log.split(':', maxsplit=1)
+        num = int(num)
+        pro_file_dict[num] = file
+    pro_file_dict[pro_num] = filename
+    return new
+
 def find_pos(dir_name:str,file_name:str,num:int,ws,num_col,start_col)->(int,int):
     """
     根据文件夹名和题号返回【成绩格所在的行列号】。错误代码：
     若姓名学号不匹配，返回-1，-1.
     若表中找不到学号，返回-2，-2.
-    若dir_name中找不到学号，返回-3，-3
+    若dir_name中找不到学号，返回-3，-3.
     """
-
     nums = re.findall(r'(\d+)',dir_name)
     nums.sort(key=len,reverse=True)
     if not nums:
@@ -105,4 +137,4 @@ def numFromDirName(name:str)->str:
     return nums[0]
 
 if __name__ == '__main__':
-    main(source_file,excel_file,error_log,start_time=None)
+    main(source_file,excel_file,error_log,problem_count=problem_count,start_time=None)
