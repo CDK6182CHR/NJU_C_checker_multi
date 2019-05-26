@@ -56,7 +56,7 @@ def run_cmd(source:str,example_file:str)->str:
     """
     返回执行程序命令。不包含尾部换行符。
     """
-    return f'"{source}.exe" < "{example_file}"'
+    return f'"{source}.exe" < "{example_file}" 2 123 45 5 6 17 8 9 '
 
 def shell_cmd(cmd:str)->str:
     """

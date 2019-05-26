@@ -39,7 +39,8 @@ class PopenThread(QThread):
 
     def terminate(self):
         t = self.process.read(1000) # 莫名其妙的很长的输出结果,只要前1000个即可
-        print("read all finished",len(bytearray(t)))
+        print("read all finished")
+        self.process.kill()
         self.CheckFinished.emit(self.example, read_out(t, self.cmd))
         print("emit finished")
 
