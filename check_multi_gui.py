@@ -16,10 +16,10 @@ cgitb.enable(format='text')
 
 class checkWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
-        super().__init__()
+        super().__init__(parent)
         self.name = '南京大学C语言作业批改系统'
-        self.version = 'V1.1.4'
-        self.date = '20190526'
+        self.version = 'V1.1.5'
+        self.date = '20190914'
         self.setWindowTitle(f"{self.name} {self.version}")
         self.workDir = '.'
         self.examples = []
@@ -327,7 +327,9 @@ class checkWindow(QtWidgets.QMainWindow):
         for t in os.scandir(code_dir):
             if not t.is_dir() and ('.c' in t.name or '.C' in t.name) and '.exe' not in t.name:
                 filename = "{}\\{}".format(code_dir,t.name)
-                self.dirListWidget.addItem(filename)
+                item = QtWidgets.QListWidgetItem(filename)
+                item.setToolTip(filename)
+                self.dirListWidget.addItem(item)
         if self.dirListWidget.count():
             self.dirListWidget.setCurrentRow(0)
         else:
@@ -481,7 +483,9 @@ class checkWindow(QtWidgets.QMainWindow):
             os.chdir(self.workDir)
             for t in os.scandir(self.workDir):
                 if t.is_dir() and t.name not in ('__pycache__','inputs','backups'):
-                    self.fileListWidget.addItem(t.name)
+                    item = QtWidgets.QListWidgetItem(t.name)
+                    item.setToolTip(t.name)
+                    self.fileListWidget.addItem(item)
         except Exception as e:
             QtWidgets.QMessageBox.warning(self,'错误','文件夹非法\n'+repr(e))
             return

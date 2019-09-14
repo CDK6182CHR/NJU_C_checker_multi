@@ -5,8 +5,8 @@
 错误代码，原始记录。
 2019.03.12：不再兼容第一次的记录文档。
 """
-source_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第04次作业\log_pad.txt"
-excel_file = r"D:\个人文件\学习\本科\第4学期\C语言助教\第04次作业\《程序设计》-2017地海-作业批改结果【第4次】.xlsx"
+source_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第02次作业\工作区2\log.txt"
+excel_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第02次作业\《C程序设计》作业批改结果【第2次】.xlsx"
 problem_count = 8  # 题目总数。超过这个数的题号将被忽略
 
 # out_excel = 'source/《程序设计》-2017地海-作业批改结果 【第2次】-out.xlsx'
@@ -51,6 +51,7 @@ def main(source_file,excel_file,error_log,*,num_col=2,start_col=5,problem_count=
         row,col = find_pos(dir_name,file_name,int(num),ws,num_col,start_col)
 
         if row == -1:
+            # 分支无效
             print('姓名与学号不匹配(-1):',line)
             elog.write(f"-1,{line}\n")
         elif row == -2:
@@ -122,7 +123,8 @@ def find_pos(dir_name:str,file_name:str,num:int,ws,num_col,start_col)->(int,int)
 
     nameInList = str(ws.cell(stu_row,num_col+1).value).strip()
     if  nameInList not in dir_name and nameInList not in file_name:
-        return -1,-1
+        print('警告：姓名与学号不匹配，以学号为准录入(W-1):',nameInList,stu_num)
+        # return -1,-1
 
     col = start_col + (num-1)*2
     return stu_row,col

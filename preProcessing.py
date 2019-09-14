@@ -40,6 +40,7 @@ def pre_code(src:str)->str:
     return note
 
 def replace_code(source:str)->str:
+
     source = source.replace('_getch','getch')
     getch = re.findall('(getch *?\( *?\))',source)
     for g in getch:
@@ -56,7 +57,7 @@ def run_cmd(source:str,example_file:str)->str:
     """
     返回执行程序命令。不包含尾部换行符。
     """
-    return f'"{source}.exe" < "{example_file}" 2 123 45 5 6 17 8 9 '
+    return f'"{source}.exe" < "{example_file}"'
 
 def shell_cmd(cmd:str)->str:
     """
