@@ -330,10 +330,14 @@ class checkWindow(QtWidgets.QMainWindow):
                 item = QtWidgets.QListWidgetItem(filename)
                 item.setToolTip(filename)
                 self.dirListWidget.addItem(item)
-        if self.dirListWidget.count():
+        cnt = self.dirListWidget.count()
+        if cnt:
             self.dirListWidget.setCurrentRow(0)
         else:
             QtWidgets.QMessageBox.warning(self,'错误',"找不到源文件！")
+        curNum = self.fileListWidget.currentRow()
+        allCount = self.fileListWidget.count()
+        self.setWindowTitle(f"{self.name}  {self.version}  进度{curNum+1}/{allCount}")
 
 
     # slots
@@ -489,6 +493,8 @@ class checkWindow(QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.warning(self,'错误','文件夹非法\n'+repr(e))
             return
+        cnt = self.fileListWidget.count()
+        self.setWindowTitle(f"{self.name}  {self.version}  进度0/{cnt}")
         self.log_file = self.workDir+'\\log.txt'
         with open(self.log_file,'a',encoding='utf-8',errors='ignore') as fp:
             fp.write(f'//打开时间：{datetime.now().strftime("%y-%m-%d %H:%M:%S")}\n')

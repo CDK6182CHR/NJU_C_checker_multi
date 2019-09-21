@@ -5,12 +5,12 @@
 错误代码，原始记录。
 2019.03.12：不再兼容第一次的记录文档。
 """
-source_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第02次作业\工作区2\log.txt"
-excel_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第02次作业\《C程序设计》作业批改结果【第2次】.xlsx"
+source_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第03次作业\工作区3\log.txt"
+excel_file = r"D:\个人文件\学习\本科\第5学期\C语言助教\第03次作业\《C程序设计》作业批改结果【第3次】.xlsx"
 problem_count = 8  # 题目总数。超过这个数的题号将被忽略
 
 # out_excel = 'source/《程序设计》-2017地海-作业批改结果 【第2次】-out.xlsx'
-import openpyxl
+import openpyxl,time
 from datetime import datetime
 import re
 error_log = f"output/error_log_{datetime.now().strftime('%Y-%m-%d')}.txt"
@@ -140,4 +140,7 @@ def numFromDirName(name:str)->str:
     return nums[0]
 
 if __name__ == '__main__':
+    print("这是转换程序，等待10秒来确认")
+    time.sleep(10)
+    print("程序开始")
     main(source_file,excel_file,error_log,problem_count=problem_count,start_time=None)
